@@ -357,7 +357,6 @@ with tab3:
                              x="Implementation Year", 
                              y="Country",
                              color="Policy Type",
-                             size_max=15,
                              hover_data=["Policy Name", "Policy Area"],
                              title="Policy Implementation Timeline")
     st.plotly_chart(fig_timeline, use_container_width=True)
