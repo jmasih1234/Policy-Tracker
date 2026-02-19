@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Policy Tracker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      color: #222;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a3a5c 0%, #2d6a9f 100%);
+      color: #fff;
+      padding: 2rem 2.5rem 1.5rem;
+    }
+    header h1 { font-size: 2rem; letter-spacing: 1px; }
+    header p  { margin-top: .4rem; opacity: .85; font-size: .95rem; }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 1.25rem 2.5rem;
+      background: #fff;
+      border-bottom: 1px solid #dde1e7;
+    }
+    .controls input, .controls select {
+      padding: .55rem .9rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: .9rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .controls input { flex: 1 1 220px; }
+    .controls select { flex: 0 1 200px; }
+    .controls input:focus, .controls select:focus { border-color: #2d6a9f; }
+
+    main { padding: 1.5rem 2.5rem 3rem; }
+
+    .stats {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: .9rem 1.4rem;
+      flex: 1 1 140px;
+      text-align: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+    .stat-card .num { font-size: 1.7rem; font-weight: 700; color: #2d6a9f; }
+    .stat-card .lbl { font-size: .8rem; color: #666; margin-top: .2rem; }
+
+    .table-wrap {
+      overflow-x: auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.09);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .88rem;
+    }
+    thead tr { background: #1a3a5c; color: #fff; }
+    thead th {
+      padding: .75rem 1rem;
+      text-align: left;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+    thead th:hover { background: #2d6a9f; }
+    thead th .sort-icon { margin-left: .3rem; opacity: .6; }
+
+    tbody tr { border-bottom: 1px solid #edf0f4; transition: background .15s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f5f8fc; }
+    tbody td { padding: .7rem 1rem; vertical-align: top; }
+
+    .badge {
+      display: inline-block;
+      padding: .2rem .6rem;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge-foreign  { background: #dbeafe; color: #1e40af; }
+    .badge-domestic { background: #dcfce7; color: #166534; }
+    .badge-trade    { background: #fef9c3; color: #854d0e; }
+    .badge-climate  { background: #d1fae5; color: #065f46; }
+    .badge-defense  { background: #fee2e2; color: #991b1b; }
+    .badge-health   { background: #ede9fe; color: #6d28d9; }
+
+    .status-badge {
+      display: inline-block;
+      padding: .2rem .6rem;
+      border-radius: 4px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+    .status-active   { background: #bbf7d0; color: #166534; }
+    .status-proposed { background: #fde68a; color: #92400e; }
+    .status-repealed { background: #fecaca; color: #991b1b; }
+    .status-review   { background: #e0e7ff; color: #3730a3; }
+
+    .no-results {
+      text-align: center;
+      padding: 2.5rem;
+      color: #888;
+      font-size: .95rem;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1rem;
+      font-size: .8rem;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🌍 Global Policy Tracker</h1>
+  <p>Foreign &amp; domestic policy tracking for countries across both hemispheres</p>
+</header>
+
+<div class="controls">
+  <input type="text" id="search" placeholder="Search by country, policy, or keyword…" />
+  <select id="filter-type">
+    <option value="">All Policy Types</option>
+    <option value="Foreign">Foreign</option>
+    <option value="Domestic">Domestic</option>
+    <option value="Trade">Trade</option>
+    <option value="Climate">Climate</option>
+    <option value="Defense">Defense</option>
+    <option value="Health">Health</option>
+  </select>
+  <select id="filter-region">
+    <option value="">All Regions</option>
+    <option value="North America">North America</option>
+    <option value="South America">South America</option>
+    <option value="Europe">Europe</option>
+    <option value="Asia">Asia</option>
+    <option value="Africa">Africa</option>
+    <option value="Oceania">Oceania</option>
+    <option value="Middle East">Middle East</option>
+  </select>
+  <select id="filter-status">
+    <option value="">All Statuses</option>
+    <option value="Active">Active</option>
+    <option value="Proposed">Proposed</option>
+    <option value="Under Review">Under Review</option>
+    <option value="Repealed">Repealed</option>
+  </select>
+</div>
+
+<main>
+  <div class="stats">
+    <div class="stat-card"><div class="num" id="stat-total">0</div><div class="lbl">Total Policies</div></div>
+    <div class="stat-card"><div class="num" id="stat-countries">0</div><div class="lbl">Countries</div></div>
+    <div class="stat-card"><div class="num" id="stat-active">0</div><div class="lbl">Active</div></div>
+    <div class="stat-card"><div class="num" id="stat-proposed">0</div><div class="lbl">Proposed</div></div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="policy-table">
+      <thead>
+        <tr>
+          <th data-col="country">Country <span class="sort-icon">↕</span></th>
+          <th data-col="region">Region <span class="sort-icon">↕</span></th>
+          <th data-col="type">Type <span class="sort-icon">↕</span></th>
+          <th data-col="policy">Policy Name <span class="sort-icon">↕</span></th>
+          <th data-col="description">Description</th>
+          <th data-col="year">Year <span class="sort-icon">↕</span></th>
+          <th data-col="status">Status <span class="sort-icon">↕</span></th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+</main>
+
+<footer>Policy Tracker &mdash; Data for reference purposes only</footer>
+
+<script>
+const policies = [
+  // North America
+  { country: "United States", region: "North America", type: "Foreign",  policy: "Indo-Pacific Strategy",               description: "Strengthening alliances and partnerships across the Indo-Pacific region.",                                  year: 2022, status: "Active" },
+  { country: "United States", region: "North America", type: "Domestic", policy: "Inflation Reduction Act",              description: "Climate, healthcare, and tax reform legislation.",                                                     year: 2022, status: "Active" },
+  { country: "United States", region: "North America", type: "Trade",    policy: "USMCA",                               description: "United States-Mexico-Canada Agreement replacing NAFTA.",                                             year: 2020, status: "Active" },
+  { country: "United States", region: "North America", type: "Defense",  policy: "National Defense Authorization Act",  description: "Annual authorization of defense spending and policy priorities.",                                       year: 2024, status: "Active" },
+  { country: "United States", region: "North America", type: "Health",   policy: "Affordable Care Act",                 description: "Comprehensive health insurance reform law.",                                                          year: 2010, status: "Active" },
+  { country: "Canada",        region: "North America", type: "Climate",  policy: "Net-Zero Emissions Accountability Act","Requires Canada to achieve net-zero greenhouse gas emissions by 2050.",                                          year: 2021, status: "Active" },
+  { country: "Canada",        region: "North America", type: "Foreign",  policy: "Indo-Pacific Strategy",               description: "Expanded diplomatic and economic engagement in the Indo-Pacific.",                                    year: 2022, status: "Active" },
+  { country: "Mexico",        region: "North America", type: "Domestic", policy: "Energy Reform Reversal",              description: "Legislation favoring state-owned energy companies over private operators.",                           year: 2022, status: "Active" },
+
+  // South America
+  { country: "Brazil",        region: "South America", type: "Climate",  policy: "Amazon Fund Reactivation",           description: "Reactivation of the Amazon Fund for forest protection.",                                             year: 2023, status: "Active" },
+  { country: "Brazil",        region: "South America", type: "Trade",    policy: "EU-Mercosur Agreement",              description: "Free trade deal between Mercosur bloc and the European Union.",                                       year: 2023, status: "Proposed" },
+  { country: "Argentina",     region: "South America", type: "Domestic", policy: "Economic Liberalisation Plan",       description: "Sweeping deregulation and austerity measures.",                                                      year: 2024, status: "Active" },
+  { country: "Chile",         region: "South America", type: "Domestic", policy: "New Constitutional Process",         description: "Second attempt at drafting a new national constitution.",                                            year: 2023, status: "Under Review" },
+
+  // Europe
+  { country: "Germany",       region: "Europe",        type: "Climate",  policy: "Energiewende",                       description: "Transition to renewable energy and phase-out of nuclear and coal power.",                             year: 2010, status: "Active" },
+  { country: "Germany",       region: "Europe",        type: "Defense",  policy: "Zeitenwende Defense Increase",       description: "Historic €100 billion special fund to modernise the Bundeswehr.",                                     year: 2022, status: "Active" },
+  { country: "France",        region: "Europe",        type: "Domestic", policy: "Pension Reform",                     description: "Raising the retirement age from 62 to 64.",                                                         year: 2023, status: "Active" },
+  { country: "France",        region: "Europe",        type: "Foreign",  policy: "EU Strategic Autonomy",              description: "Push for Europe to reduce dependence on the United States and China.",                              year: 2023, status: "Active" },
+  { country: "United Kingdom",region: "Europe",        type: "Trade",    policy: "UK–India Free Trade Agreement",      description: "Bilateral free trade negotiations between the UK and India.",                                        year: 2022, status: "Under Review" },
+  { country: "European Union",region: "Europe",        type: "Climate",  policy: "European Green Deal",                description: "Roadmap to make the EU climate-neutral by 2050.",                                                    year: 2020, status: "Active" },
+  { country: "European Union",region: "Europe",        type: "Trade",    policy: "Carbon Border Adjustment Mechanism", description: "Carbon tariff on imports from countries with weaker climate policies.",                               year: 2023, status: "Active" },
+  { country: "Poland",        region: "Europe",        type: "Defense",  policy: "NATO Eastern Flank Buildup",         description: "Significant increase in military spending along the NATO eastern flank.",                            year: 2023, status: "Active" },
+
+  // Asia
+  { country: "China",         region: "Asia",          type: "Foreign",  policy: "Belt and Road Initiative",           description: "Global infrastructure investment strategy spanning 140+ countries.",                                  year: 2013, status: "Active" },
+  { country: "China",         region: "Asia",          type: "Domestic", policy: "Common Prosperity Policy",           description: "Regulatory crackdown on tech and property sectors to reduce inequality.",                           year: 2021, status: "Active" },
+  { country: "Japan",         region: "Asia",          type: "Defense",  policy: "Defense Capability Buildup Plan",    description: "Doubling of defense spending to 2% of GDP by 2027.",                                               year: 2022, status: "Active" },
+  { country: "India",         region: "Asia",          type: "Trade",    policy: "Production Linked Incentive Scheme", description: "Manufacturing incentives across 14 key sectors.",                                                    year: 2020, status: "Active" },
+  { country: "South Korea",   region: "Asia",          type: "Foreign",  policy: "Indo-Pacific Strategy",              description: "Rules-based order engagement across the Indo-Pacific.",                                            year: 2022, status: "Active" },
+  { country: "Taiwan",        region: "Asia",          type: "Defense",  policy: "Defense Budget Increase",            description: "Sustained increase in defense spending amid cross-strait tensions.",                                year: 2023, status: "Active" },
+
+  // Middle East
+  { country: "Saudi Arabia",  region: "Middle East",   type: "Domestic", policy: "Vision 2030",                        description: "Economic diversification away from oil dependency.",                                                 year: 2016, status: "Active" },
+  { country: "Iran",          region: "Middle East",   type: "Foreign",  policy: "Nuclear Negotiations",               description: "Ongoing diplomatic efforts around Iran's nuclear program.",                                         year: 2021, status: "Under Review" },
+  { country: "Israel",        region: "Middle East",   type: "Domestic", policy: "Judicial Reform Proposal",           description: "Controversial overhaul of the judicial oversight system.",                                         year: 2023, status: "Under Review" },
+
+  // Africa
+  { country: "South Africa",  region: "Africa",        type: "Trade",    policy: "African Continental Free Trade Area","Implementation of the AfCFTA single-market agreement.",                                                          year: 2021, status: "Active" },
+  { country: "Nigeria",       region: "Africa",        type: "Domestic", policy: "Fuel Subsidy Removal",               description: "End of decades-long fuel subsidies as part of economic reform.",                                   year: 2023, status: "Active" },
+  { country: "Ethiopia",      region: "Africa",        type: "Foreign",  policy: "Pretoria Peace Agreement",           description: "Ceasefire agreement ending the Tigray conflict.",                                                   year: 2022, status: "Active" },
+
+  // Oceania
+  { country: "Australia",     region: "Oceania",       type: "Climate",  policy: "Climate Change Act",                 description: "Legislated net-zero emissions by 2050 with 43% reduction target by 2030.",                          year: 2022, status: "Active" },
+  { country: "Australia",     region: "Oceania",       type: "Defense",  policy: "AUKUS Submarine Program",            description: "Nuclear-powered submarine acquisition under the AUKUS partnership.",                               year: 2023, status: "Active" },
+  { country: "New Zealand",   region: "Oceania",       type: "Domestic", policy: "Te Aka Whai Ora Repeal",             description: "Repeal of the Māori Health Authority.",                                                            year: 2023, status: "Repealed" },
+];
+
+// ── Rendering ──────────────────────────────────────────────────────────────
+const typeBadge = { Foreign:"badge-foreign", Domestic:"badge-domestic", Trade:"badge-trade", Climate:"badge-climate", Defense:"badge-defense", Health:"badge-health" };
+const statusBadge = { Active:"status-active", Proposed:"status-proposed", "Under Review":"status-review", Repealed:"status-repealed" };
+
+let sortCol = "country", sortDir = 1;
+
+function render(data) {
+  const tbody = document.getElementById("table-body");
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="no-results">No policies match your filters.</td></tr>`;
+  } else {
+    tbody.innerHTML = data.map(p => `
+      <tr>
+        <td>${p.country}</td>
+        <td>${p.region}</td>
+        <td><span class="badge ${typeBadge[p.type]||''}">${p.type}</span></td>
+        <td><strong>${p.policy}</strong></td>
+        <td>${p.description}</td>
+        <td>${p.year}</td>
+        <td><span class="status-badge ${statusBadge[p.status]||''}">${p.status}</span></td>
+      </tr>`).join('');
+  }
+  // stats
+  document.getElementById("stat-total").textContent    = data.length;
+  document.getElementById("stat-countries").textContent = new Set(data.map(p=>p.country)).size;
+  document.getElementById("stat-active").textContent   = data.filter(p=>p.status==="Active").length;
+  document.getElementById("stat-proposed").textContent = data.filter(p=>p.status==="Proposed").length;
+}
+
+function filtered() {
+  const q   = document.getElementById("search").value.toLowerCase();
+  const typ = document.getElementById("filter-type").value;
+  const reg = document.getElementById("filter-region").value;
+  const sta = document.getElementById("filter-status").value;
+
+  return policies
+    .filter(p =>
+      (!q   || [p.country, p.region, p.type, p.policy, p.description].some(f=>f.toLowerCase().includes(q))) &&
+      (!typ || p.type   === typ) &&
+      (!reg || p.region === reg) &&
+      (!sta || p.status === sta)
+    )
+    .sort((a, b) => {
+      const av = String(a[sortCol]||''), bv = String(b[sortCol]||'');
+      return av.localeCompare(bv) * sortDir;
+    });
+}
+
+function update() { render(filtered()); }
+
+// ── Sort ───────────────────────────────────────────────────────────────────
+document.querySelectorAll("thead th[data-col]").forEach(th => {
+  th.addEventListener("click", () => {
+    const col = th.dataset.col;
+    if (sortCol === col) { sortDir *= -1; }
+    else { sortCol = col; sortDir = 1; }
+    update();
+  });
+});
+
+// ── Filters ────────────────────────────────────────────────────────────────
+["search","filter-type","filter-region","filter-status"].forEach(id =>
+  document.getElementById(id).addEventListener("input", update)
+);
+
+update();
+</script>
+</body>
+</html>
